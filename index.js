@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const jwt = require("jsonwebtoken");
 
 require("dotenv").config();
@@ -45,9 +45,21 @@ async function run() {
       });
 
       app.get("/users", async (req, res) => {
-        const query = {};
+        let query = {};
+        if (req.query.role) {
+          query = {
+            role: req.query.role,
+          };
+        }
         const users = await usersCollection.find(query).toArray();
         res.send(users);
+      });
+
+      app.delete("/users/:id", async (req, res) => {
+        const id = req.params.id;
+        const filter = { _id: ObjectId(id) };
+        const result = await usersCollection.deleteOne(filter);
+        res.send(result);
       });
 
       app.get("/users/admin/:email", async (req, res) => {
