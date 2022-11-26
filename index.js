@@ -30,13 +30,47 @@ async function run() {
     const categoryCollection = client
       .db("dreamBike")
       .collection("allCategorys");
-    const productCollection = client.db("dreamBike").collection("AllProducts");
+    const productCollection = client.db("dreamBike").collection("allProducts");
     const usersCollection = client.db("dreamBike").collection("users");
 
     app.get("/allCategories", async (req, res) => {
       const query = {};
       const categories = await categoryCollection.find(query).toArray();
       res.send(categories);
+
+      app.get("/allCategoriesid", async (req, res) => {
+        const filter = {};
+        const options = { upsert: true };
+        const updateDoc = {
+          $set: {
+            categoryID: 1,
+          },
+        };
+        const result = await categoryCollection.updateMany(
+          filter,
+          updateDoc,
+          options
+        );
+
+        res.send(result);
+      });
+
+      app.post("/allProducts", async (req, res) => {
+        const product = req.body;
+        const result = await productCollection.insertOne(product);
+        res.send(result);
+      });
+
+      app.get("/allProducts", async (req, res) => {
+        let query = {};
+        if (req.query.categoryID) {
+          query = {
+            categoryID: req.query.categoryID,
+          };
+        }
+        const product = await productCollection.find(query).toArray();
+        res.send(product);
+      });
 
       app.post("/users", async (req, res) => {
         const user = req.body;
