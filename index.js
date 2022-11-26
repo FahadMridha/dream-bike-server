@@ -66,7 +66,17 @@ async function run() {
 
       app.get("/allProducts", async (req, res) => {
         let query = {};
-        if (req.query.categoryID) {
+        if (req.query.email) {
+          query = {
+            email: req.query.email,
+          };
+        }
+        const product = await productCollection.find(query).toArray();
+        res.send(product);
+      });
+      app.get("/allProducts", async (req, res) => {
+        let query = {};
+        if (req.query.email) {
           query = {
             categoryID: req.query.categoryID,
           };
