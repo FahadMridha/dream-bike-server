@@ -32,28 +32,31 @@ async function run() {
       .collection("allCategorys");
     const productCollection = client.db("dreamBike").collection("allProducts");
     const usersCollection = client.db("dreamBike").collection("users");
+    const bookingCollection = client.db("dreamBike").collection("booking");
 
     app.get("/allCategories", async (req, res) => {
       const query = {};
       const categories = await categoryCollection.find(query).toArray();
       res.send(categories);
 
-      app.get("/allCategoriesid", async (req, res) => {
-        const filter = {};
-        const options = { upsert: true };
-        const updateDoc = {
-          $set: {
-            categoryID: 1,
-          },
-        };
-        const result = await categoryCollection.updateMany(
-          filter,
-          updateDoc,
-          options
-        );
+      // temporary
 
-        res.send(result);
-      });
+      // app.get("/allCategoriesid", async (req, res) => {
+      //   const filter = {};
+      //   const options = { upsert: true };
+      //   const updateDoc = {
+      //     $set: {
+      //       categoryID: 1,
+      //     },
+      //   };
+      //   const result = await categoryCollection.updateMany(
+      //     filter,
+      //     updateDoc,
+      //     options
+      //   );
+
+      //   res.send(result);
+      // });
 
       app.post("/allProducts", async (req, res) => {
         const product = req.body;
@@ -70,6 +73,30 @@ async function run() {
         }
         const product = await productCollection.find(query).toArray();
         res.send(product);
+      });
+
+      app.get("/allProducts/:email", async (req, res) => {
+        const email = req.params.email;
+        const query = { email };
+        const product = await productCollection.find(query).toArray();
+        res.send(product);
+      });
+
+      app.post("/bookings", async (req, res) => {
+        const booking = req.body;
+        const result = await bookingCollection.insertOne(booking);
+        res.send(result);
+      });
+
+      app.get("/bookings", async (req, res) => {
+        const email = req.query.email;
+        // const decodecEmail = req.decoded.email;
+        // if (email !== decodecEmail) {
+        //   return res.status(403).send({ message: "forbidden access" });
+        // }
+        const query = { email: email };
+        const result = await bookingCollection.find(query).toArray();
+        res.send(result);
       });
 
       app.post("/users", async (req, res) => {
