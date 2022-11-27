@@ -33,6 +33,7 @@ async function run() {
     const productCollection = client.db("dreamBike").collection("allProducts");
     const usersCollection = client.db("dreamBike").collection("users");
     const bookingCollection = client.db("dreamBike").collection("booking");
+    const advertiseCollection = client.db("dreamBike").collection("advertise");
 
     app.get("/allCategories", async (req, res) => {
       const query = {};
@@ -58,31 +59,41 @@ async function run() {
       //   res.send(result);
       // });
 
+      //post api create for allProducts
       app.post("/allProducts", async (req, res) => {
         const product = req.body;
         const result = await productCollection.insertOne(product);
         res.send(result);
       });
 
+      // app.get("/allProducts", async (req, res) => {
+      //   let query = {};
+      //   if (req.query.email) {
+      //     query = {
+      //       email: req.query.email,
+      //     };
+      //   }
+      //   const product = await productCollection.find(query).toArray();
+      //   res.send(product);
+      // });
+
+      //get api for allProducts
       app.get("/allProducts", async (req, res) => {
         let query = {};
-        if (req.query.email) {
-          query = {
-            email: req.query.email,
-          };
-        }
-        const product = await productCollection.find(query).toArray();
-        res.send(product);
-      });
-      app.get("/allProducts", async (req, res) => {
-        let query = {};
-        if (req.query.email) {
+        if (req.query.categoryID) {
           query = {
             categoryID: req.query.categoryID,
           };
         }
         const product = await productCollection.find(query).toArray();
         res.send(product);
+      });
+
+      app.delete("/allProducts/:id", async (req, res) => {
+        const id = req.params.id;
+        const filter = { _id: ObjectId(id) };
+        const result = await productCollection.deleteOne(filter);
+        res.send(result);
       });
 
       app.get("/allProducts/:email", async (req, res) => {
@@ -92,6 +103,7 @@ async function run() {
         res.send(product);
       });
 
+      //post api create for booking
       app.post("/bookings", async (req, res) => {
         const booking = req.body;
         const result = await bookingCollection.insertOne(booking);
@@ -109,12 +121,29 @@ async function run() {
         res.send(result);
       });
 
+      //post api create for advertised
+
+      app.post("/advertise", async (req, res) => {
+        const advertise = req.body;
+        const result = await advertiseCollection.insertOne(advertise);
+        res.send(result);
+      });
+
+      //get api create for advertised
+
+      app.get("/advertise", async (req, res) => {
+        const query = {};
+        const result = await advertiseCollection.find(query).toArray();
+        res.send(result);
+      });
+
+      //post api create for user
       app.post("/users", async (req, res) => {
         const user = req.body;
         const result = await usersCollection.insertOne(user);
         res.send(result);
       });
-
+      //get api for all user
       app.get("/users", async (req, res) => {
         let query = {};
         if (req.query.role) {
@@ -139,6 +168,26 @@ async function run() {
         const user = await usersCollection.findOne(query);
         res.send({ isAdmin: user?.role === "admin" });
       });
+
+      app.put("/users/seller/:id", async (req, res) => {
+        const id = req.params.id;
+        const status = req.body.status;
+        const options = { upsert: true };
+        const filter = { _id: ObjectId(id) };
+        const updateDoc = {
+          $set: {
+            status: status,
+          },
+        };
+
+        const result = await usersCollection.updateOne(
+          filter,
+          updateDoc,
+          options
+        );
+        res.send(result);
+      });
+
       app.get("/users/seller/:email", async (req, res) => {
         const email = req.params.email;
         const query = { email };
