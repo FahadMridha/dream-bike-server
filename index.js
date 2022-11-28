@@ -52,6 +52,42 @@ async function run() {
     const bookingCollection = client.db("dreamBike").collection("booking");
     const advertiseCollection = client.db("dreamBike").collection("advertise");
 
+    //NOTE:Make sure you are verifyAdmin after JWTverify
+
+    const verifyAdmin = async (req, res, next) => {
+      // console.log("inside admin:", req.decoded.email);
+      const decodedEmail = req.decoded.email;
+      const query = { email: decodedEmail };
+      const user = await usersCollection.findOne(query);
+      if (user?.role !== "admin") {
+        return res.status(403).send({ message: "Forbiden access" });
+      }
+
+      next();
+    };
+    const verifySeller = async (req, res, next) => {
+      // console.log("inside admin:", req.decoded.email);
+      const decodedEmail = req.decoded.email;
+      const query = { email: decodedEmail };
+      const user = await usersCollection.findOne(query);
+      if (user?.role !== "seller") {
+        return res.status(403).send({ message: "Forbiden access" });
+      }
+
+      next();
+    };
+    const verifyBuyer = async (req, res, next) => {
+      // console.log("inside admin:", req.decoded.email);
+      const decodedEmail = req.decoded.email;
+      const query = { email: decodedEmail };
+      const user = await usersCollection.findOne(query);
+      if (user?.role !== "buyer") {
+        return res.status(403).send({ message: "Forbiden access" });
+      }
+
+      next();
+    };
+
     app.get("/allCategories", async (req, res) => {
       const query = {};
       const categories = await categoryCollection.find(query).toArray();
@@ -77,14 +113,14 @@ async function run() {
       // });
 
       //post api create for allProducts
-      app.post("/allProducts", async (req, res) => {
+      app.post("/allProducts", verifiedJwt, verifySeller, async (req, res) => {
         const product = req.body;
         const result = await productCollection.insertOne(product);
         res.send(result);
       });
 
       //get api for allProducts
-      app.get("/allProducts", async (req, res) => {
+      app.get("/allProducts", verifiedJwt, async (req, res) => {
         let query = {};
         if (req.query.categoryID) {
           query = {
@@ -95,12 +131,17 @@ async function run() {
         res.send(product);
       });
 
-      app.delete("/allProducts/:id", async (req, res) => {
-        const id = req.params.id;
-        const filter = { _id: ObjectId(id) };
-        const result = await productCollection.deleteOne(filter);
-        res.send(result);
-      });
+      app.delete(
+        "/allProducts/:id",
+        verifiedJwt,
+        verifySeller,
+        async (req, res) => {
+          const id = req.params.id;
+          const filter = { _id: ObjectId(id) };
+          const result = await productCollection.deleteOne(filter);
+          res.send(result);
+        }
+      );
 
       app.get("/allProducts/:email", async (req, res) => {
         const email = req.params.email;
@@ -110,13 +151,13 @@ async function run() {
       });
 
       //post api create for booking
-      app.post("/bookings", async (req, res) => {
+      app.post("/bookings", verifiedJwt, verifyBuyer, async (req, res) => {
         const booking = req.body;
         const result = await bookingCollection.insertOne(booking);
         res.send(result);
       });
 
-      app.get("/bookings", async (req, res) => {
+      app.get("/bookings", verifiedJwt, verifyBuyer, async (req, res) => {
         const email = req.query.email;
         // const decodecEmail = req.decoded.email;
         // if (email !== decodecEmail) {
@@ -129,7 +170,7 @@ async function run() {
 
       //post api create for advertised
 
-      app.post("/advertise", async (req, res) => {
+      app.post("/advertise", verifiedJwt, verifySeller, async (req, res) => {
         const advertise = req.body;
         const result = await advertiseCollection.insertOne(advertise);
         res.send(result);
@@ -137,7 +178,7 @@ async function run() {
 
       //get api create for advertised
 
-      app.get("/advertise", async (req, res) => {
+      app.get("/advertise", verifiedJwt, async (req, res) => {
         const query = {};
         const result = await advertiseCollection.find(query).toArray();
         res.send(result);
@@ -161,7 +202,7 @@ async function run() {
         res.send(users);
       });
 
-      app.delete("/users/:id", async (req, res) => {
+      app.delete("/users/:id", verifiedJwt, verifyAdmin, async (req, res) => {
         const id = req.params.id;
         const filter = { _id: ObjectId(id) };
         const result = await usersCollection.deleteOne(filter);
@@ -194,13 +235,13 @@ async function run() {
         res.send(result);
       });
 
-      app.get("/users/seller/:email", async (req, res) => {
+      app.get("/users/seller/:email", verifiedJwt, async (req, res) => {
         const email = req.params.email;
         const query = { email };
         const user = await usersCollection.findOne(query);
         res.send({ isSeller: user?.role === "seller" });
       });
-      app.get("/users/buyer/:email", async (req, res) => {
+      app.get("/users/buyer/:email", verifiedJwt, async (req, res) => {
         const email = req.params.email;
         const query = { email };
         const user = await usersCollection.findOne(query);
