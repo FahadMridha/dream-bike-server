@@ -95,7 +95,7 @@ async function run() {
       res.send(categories);
 
       //post api create for allProducts
-      app.post("/allProducts", verifiedJwt, verifySeller, async (req, res) => {
+      app.post("/allProducts", verifiedJwt, async (req, res) => {
         const product = req.body;
         const result = await productCollection.insertOne(product);
         res.send(result);
@@ -116,7 +116,7 @@ async function run() {
       app.delete(
         "/allProducts/:id",
         verifiedJwt,
-        verifySeller,
+
         async (req, res) => {
           const id = req.params.id;
           const filter = { _id: ObjectId(id) };
@@ -133,7 +133,7 @@ async function run() {
       });
 
       //post api create for booking
-      app.post("/bookings", verifiedJwt, verifyBuyer, async (req, res) => {
+      app.post("/bookings", verifiedJwt, async (req, res) => {
         const booking = req.body;
         const result = await bookingCollection.insertOne(booking);
         res.send(result);
