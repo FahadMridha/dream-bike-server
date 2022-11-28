@@ -4,7 +4,7 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const jwt = require("jsonwebtoken");
 
 require("dotenv").config();
-
+const stripe = require("stripe")(process.env.STRIPE_SECRET);
 const port = process.env.PORT || 5000;
 const app = express();
 
@@ -52,7 +52,7 @@ async function run() {
     const bookingCollection = client.db("dreamBike").collection("booking");
     const advertiseCollection = client.db("dreamBike").collection("advertise");
     const reportedCollection = client.db("dreamBike").collection("reported");
-
+    const paymentsCollection = client.db("dreamBike").collection("payments");
     //NOTE:Make sure you are verifyAdmin after JWTverify
 
     const verifyAdmin = async (req, res, next) => {
@@ -150,6 +150,45 @@ async function run() {
         res.send(result);
       });
 
+      app.get("/bookings/:id", async (req, res) => {
+        const id = req.params.id;
+        const query = { _id: ObjectId(id) };
+        const booking = await bookingCollection.findOne(query);
+        res.send(booking);
+      });
+
+      app.post("/create-payment-intent", async (req, res) => {
+        const booking = req.body;
+        const price = booking.price;
+        const amount = price * 100;
+
+        const paymentIntent = await stripe.paymentIntents.create({
+          currency: "usd",
+          amount: amount,
+          payment_method_types: ["card"],
+        });
+        res.send({
+          clientSecret: paymentIntent.client_secret,
+        });
+      });
+
+      app.post("/payments", async (req, res) => {
+        const payment = req.body;
+        const result = await paymentsCollection.insertOne(payment);
+        const id = payment.bookingId;
+        const filter = { _id: ObjectId(id) };
+        const updatedDoc = {
+          $set: {
+            paid: true,
+            transactionId: payment.transactionId,
+          },
+        };
+        const updatedResult = await bookingCollection.updateOne(
+          filter,
+          updatedDoc
+        );
+        res.send(result);
+      });
       //post api create for advertised
 
       app.post("/advertise", async (req, res) => {
