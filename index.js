@@ -51,6 +51,7 @@ async function run() {
     const usersCollection = client.db("dreamBike").collection("users");
     const bookingCollection = client.db("dreamBike").collection("booking");
     const advertiseCollection = client.db("dreamBike").collection("advertise");
+    const reportedCollection = client.db("dreamBike").collection("reported");
 
     //NOTE:Make sure you are verifyAdmin after JWTverify
 
@@ -92,25 +93,6 @@ async function run() {
       const query = {};
       const categories = await categoryCollection.find(query).toArray();
       res.send(categories);
-
-      // temporary
-
-      // app.get("/allCategoriesid", async (req, res) => {
-      //   const filter = {};
-      //   const options = { upsert: true };
-      //   const updateDoc = {
-      //     $set: {
-      //       categoryID: 1,
-      //     },
-      //   };
-      //   const result = await categoryCollection.updateMany(
-      //     filter,
-      //     updateDoc,
-      //     options
-      //   );
-
-      //   res.send(result);
-      // });
 
       //post api create for allProducts
       app.post("/allProducts", verifiedJwt, verifySeller, async (req, res) => {
@@ -246,6 +228,26 @@ async function run() {
         const query = { email };
         const user = await usersCollection.findOne(query);
         res.send({ isBuyer: user?.role === "buyer" });
+      });
+
+      //reported api
+      app.post("/reported", async (req, res) => {
+        const reported = req.body;
+        const result = await reportedCollection.insertOne(reported);
+        res.send(result);
+      });
+
+      app.get("/reported", async (req, res) => {
+        const query = {};
+        const result = await reportedCollection.find(query).toArray();
+        res.send(result);
+      });
+
+      app.delete("/reported/:id", verifiedJwt, async (req, res) => {
+        const id = req.params.id;
+        const filter = { _id: ObjectId(id) };
+        const result = await reportedCollection.deleteOne(filter);
+        res.send(result);
       });
 
       //jwt api create
