@@ -25,6 +25,23 @@ const client = new MongoClient(uri, {
   serverApi: ServerApiVersion.v1,
 });
 
+///verifay JWT
+
+function verifiedJwt(req, res, next) {
+  const authHeader = req.headers.authorazition;
+  if (!authHeader) {
+    return res.status(401).send("unauthoraze access");
+  }
+  const token = authHeader.split(" ")[1];
+  jwt.verify(token, process.env.ACCESS_TOKEN, function (error, decoded) {
+    if (error) {
+      return res.status(403).send({ message: "forbidden access" });
+    }
+    req.decoded = decoded;
+    next();
+  });
+}
+
 async function run() {
   try {
     const categoryCollection = client
@@ -65,17 +82,6 @@ async function run() {
         const result = await productCollection.insertOne(product);
         res.send(result);
       });
-
-      // app.get("/allProducts", async (req, res) => {
-      //   let query = {};
-      //   if (req.query.email) {
-      //     query = {
-      //       email: req.query.email,
-      //     };
-      //   }
-      //   const product = await productCollection.find(query).toArray();
-      //   res.send(product);
-      // });
 
       //get api for allProducts
       app.get("/allProducts", async (req, res) => {
@@ -199,6 +205,24 @@ async function run() {
         const query = { email };
         const user = await usersCollection.findOne(query);
         res.send({ isBuyer: user?.role === "buyer" });
+      });
+
+      //jwt api create
+
+      app.get("/jwt", async (req, res) => {
+        const email = req.query.email;
+        const query = {
+          email: email,
+        };
+        const user = await usersCollection.findOne(query);
+        if (user) {
+          const token = jwt.sign({ email }, process.env.ACCESS_TOKEN, {
+            expiresIn: "1d",
+          });
+          return res.send({ accessToken: token });
+        }
+
+        res.status(403).send({ accessToken: "" });
       });
     });
   } catch (error) {
