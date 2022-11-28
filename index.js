@@ -152,7 +152,7 @@ async function run() {
 
       //post api create for advertised
 
-      app.post("/advertise", verifiedJwt, verifySeller, async (req, res) => {
+      app.post("/advertise", async (req, res) => {
         const advertise = req.body;
         const result = await advertiseCollection.insertOne(advertise);
         res.send(result);
@@ -160,7 +160,7 @@ async function run() {
 
       //get api create for advertised
 
-      app.get("/advertise", verifiedJwt, async (req, res) => {
+      app.get("/advertise", async (req, res) => {
         const query = {};
         const result = await advertiseCollection.find(query).toArray();
         res.send(result);
@@ -198,32 +198,26 @@ async function run() {
         res.send({ isAdmin: user?.role === "admin" });
       });
 
-      app.put("/users/seller/:id", async (req, res) => {
+      app.patch("/users/seller/:id", async (req, res) => {
         const id = req.params.id;
         const status = req.body.status;
-        const options = { upsert: true };
-        const filter = { _id: ObjectId(id) };
+        const query = { _id: ObjectId(id) };
         const updateDoc = {
           $set: {
             status: status,
           },
         };
-
-        const result = await usersCollection.updateOne(
-          filter,
-          updateDoc,
-          options
-        );
+        const result = await usersCollection.updateOne(query, updateDoc);
         res.send(result);
       });
 
-      app.get("/users/seller/:email", verifiedJwt, async (req, res) => {
+      app.get("/users/seller/:email", async (req, res) => {
         const email = req.params.email;
         const query = { email };
         const user = await usersCollection.findOne(query);
         res.send({ isSeller: user?.role === "seller" });
       });
-      app.get("/users/buyer/:email", verifiedJwt, async (req, res) => {
+      app.get("/users/buyer/:email", async (req, res) => {
         const email = req.params.email;
         const query = { email };
         const user = await usersCollection.findOne(query);
@@ -243,9 +237,9 @@ async function run() {
         res.send(result);
       });
 
-      app.delete("/reported/:id", verifiedJwt, async (req, res) => {
+      app.delete("/reported/:id", async (req, res) => {
         const id = req.params.id;
-        const filter = { _id: ObjectId(id) };
+        const filter = { _id: id };
         const result = await reportedCollection.deleteOne(filter);
         res.send(result);
       });
