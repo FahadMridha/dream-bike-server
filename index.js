@@ -4,6 +4,7 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const jwt = require("jsonwebtoken");
 
 require("dotenv").config();
+
 const stripe = require("stripe")(process.env.STRIPE_SECRET);
 const port = process.env.PORT || 5000;
 const app = express();
@@ -102,7 +103,7 @@ async function run() {
       });
 
       //get api for allProducts
-      app.get("/allProducts", verifiedJwt, async (req, res) => {
+      app.get("/allProducts", async (req, res) => {
         let query = {};
         if (req.query.categoryID) {
           query = {
@@ -116,7 +117,7 @@ async function run() {
       app.delete(
         "/allProducts/:id",
         verifiedJwt,
-
+        verifySeller,
         async (req, res) => {
           const id = req.params.id;
           const filter = { _id: ObjectId(id) };
@@ -158,18 +159,21 @@ async function run() {
       });
 
       app.post("/create-payment-intent", async (req, res) => {
-        const booking = req.body;
-        const price = booking.price;
-        const amount = price * 100;
+        const price = req.body.resalePrice;
 
-        const paymentIntent = await stripe.paymentIntents.create({
-          currency: "usd",
-          amount: amount,
-          payment_method_types: ["card"],
-        });
-        res.send({
-          clientSecret: paymentIntent.client_secret,
-        });
+        const amount = parseInt(price) * 100;
+        try {
+          const paymentIntent = await stripe.paymentIntents.create({
+            currency: "usd",
+            amount: amount,
+            payment_method_types: ["card"],
+          });
+          res.send({
+            clientSecret: paymentIntent.client_secret,
+          });
+        } catch (error) {
+          console.log(error);
+        }
       });
 
       app.post("/payments", async (req, res) => {
